@@ -40,14 +40,14 @@ public class TopManager {
     public TopManager(LeaderboardPlugin pl, List<String> initialBoards) {
         plugin = pl;
         CacheMethod method = plugin.getCache().getMethod();
-        int t = method instanceof MysqlMethod ? Math.max(10, method.getMaxConnections()) : plugin.getAConfig().getInt("max-fetching-threads");
+        int t = method instanceof MysqlMethod ? Math.min(10, method.getMaxConnections()) : plugin.getAConfig().getInt("max-fetching-threads");
         fetchService = new ThreadPoolExecutor(
                 t, t,
-                500, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(1000000, true)
+                60, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>()
         );
         fetchService.allowCoreThreadTimeOut(true);
-        fetchService.setThreadFactory(ThreadFactoryProxy.getDefaultThreadFactory("AJLBFETCH"));
+        fetchService.setThreadFactory(ThreadFactoryProxy.getDefaultThreadFactory("ajLeaderboards-Fetcher"));
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             rolling.add(getQueuedTasks()+getActiveFetchers());
             if(rolling.size() > 50) {
